@@ -44,6 +44,7 @@ from bson.binary import Binary
 from bson.py3compat import string_type, _unicode, PY3
 from bson.son import SON
 from pymongo.auth_aws import _authenticate_aws
+from pymongo.auth_saml import _authenticate_saml
 from pymongo.errors import ConfigurationError, OperationFailure
 from pymongo.saslprep import saslprep
 
@@ -56,6 +57,7 @@ MECHANISMS = frozenset(
      'PLAIN',
      'SCRAM-SHA-1',
      'SCRAM-SHA-256',
+     'SAML20',
      'DEFAULT'])
 """The authentication mechanisms supported by PyMongo."""
 
@@ -151,6 +153,10 @@ def _build_credentials_tuple(mech, source, user, passwd, extra, database):
     elif mech == 'PLAIN':
         source_database = source or database or '$external'
         return MongoCredential(mech, source_database, user, passwd, None, None)
+    elif mech == "SAML20":
+        source_database = source or database or 'admin'
+        return MongoCredential(
+            mech, source_database, user, passwd, None, _Cache())
     else:
         source_database = source or database or 'admin'
         if passwd is None:
@@ -606,6 +612,7 @@ _AUTH_MAP = {
         _authenticate_scram, mechanism='SCRAM-SHA-1'),
     'SCRAM-SHA-256': functools.partial(
         _authenticate_scram, mechanism='SCRAM-SHA-256'),
+    'SAML20': _authenticate_saml,
     'DEFAULT': _authenticate_default,
 }
 
